@@ -4,16 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
 
 public class NioTelnetServer {
 
     private final ByteBuffer buffer = ByteBuffer.allocate(1024);
     private final String rootPath = "server";
+    private HashMap<SelectableChannel, Path> usrPath = new HashMap<>();
 
     public NioTelnetServer() throws IOException {
         ServerSocketChannel server = ServerSocketChannel.open();
@@ -22,6 +23,7 @@ public class NioTelnetServer {
         Selector selector = Selector.open();
         server.register(selector, SelectionKey.OP_ACCEPT);
         System.out.println("Server started!");
+        usrPath = new HashMap();
         while (server.isOpen()) {
             selector.select();
             var selectionKeys = selector.selectedKeys();
@@ -30,6 +32,9 @@ public class NioTelnetServer {
                 var key = iterator.next();
                 if (key.isAcceptable()) {
                     handleAccept(key, selector);
+                    if(!usrPath.containsKey(key.channel())) {
+                        usrPath.put(key.channel(), Path.of(rootPath));
+                    }
                 }
                 if (key.isReadable()) {
                     handleRead(key, selector);
@@ -52,6 +57,7 @@ public class NioTelnetServer {
         SocketChannel channel = (SocketChannel) key.channel();
         int read = channel.read(buffer);
         if (read == -1) {
+            usrPath.remove(key.channel());
             channel.close();
             return;
         }
@@ -72,10 +78,25 @@ public class NioTelnetServer {
         if (command.equals("--help")) {
             channel.write(ByteBuffer.wrap("input ls for show file list".getBytes()));
         }
-        if (command.equals("ls")) {
-            channel.write(ByteBuffer.wrap(getFilesList().getBytes()));
+        else if (command.equals("ls")) {
+            System.out.println(ByteBuffer.wrap(getFilesList().getBytes()));
         }
-
+        else if (command.length()>=2 && command.substring(0,2).equals("cd ")){
+            System.out.println();
+            System.out.println(changeDirectory(command.substring(3), key.channel()));
+        }
+        else if (command.length()>=6 && command.substring(0,5).equals("touch ")){
+            System.out.println(ByteBuffer.wrap(createFile(command.substring(6), key.channel()).getBytes()));
+        }
+        else if (command.length()>=6 && command.substring(0,5).equals("mkdir ")) {
+            System.out.println(ByteBuffer.wrap(createDir(command.substring(6), key.channel()).getBytes()));
+        }
+        else if (command.length()>=3 && command.substring(0,2).equals("rm ")) {
+            System.out.println(ByteBuffer.wrap(deleteFile(command.substring(3), key.channel()).getBytes()));
+        }
+        else{
+            System.out.println(ByteBuffer.wrap("command not found".getBytes()));
+        }
     }
 
     private void sendMessage(String message, Selector selector) throws IOException {
@@ -89,6 +110,58 @@ public class NioTelnetServer {
 
     private String getFilesList() {
         return String.join(" ", new File(rootPath).list());
+    }
+
+    private String changeDirectory(String userMsg, SelectableChannel key) {
+        Path x = Path.of(usrPath.get(key).toString(), userMsg);
+        if (Files.exists(x)){
+            usrPath.put(key, x);
+            return x.toString();
+        } else {
+            return "Path not found";
+        }
+    }
+
+    private String createFile(String fileName, SelectableChannel key){
+        Path x = Path.of(usrPath.get(key).toString(), fileName);
+        if (!Files.exists(x)){
+            try {
+                Files.createFile(x);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return "file is created";
+        } else {
+            return "file already created";
+        }
+    }
+
+    private String createDir(String userMsg, SelectableChannel key){
+        Path x = Path.of(usrPath.get(key).toString(), userMsg);
+        if (!Files.exists(x)){
+            try {
+                Files.createDirectory(x);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return "directory is created";
+        } else {
+            return "directory already created";
+        }
+    }
+
+    private String deleteFile(String fileName, SelectableChannel key){
+        Path x = Path.of(usrPath.get(key).toString(), fileName);
+        if (!Files.exists(x)){
+            try {
+                Files.delete(x);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return "file is deleted";
+        } else {
+            return "file already deleted";
+        }
     }
 
     private void handleAccept(SelectionKey key, Selector selector) throws IOException {
