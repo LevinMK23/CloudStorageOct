@@ -12,6 +12,7 @@ public class IoUtils {
         Path path = Path.of("client");
         System.out.println(path);
         System.out.println(path.toAbsolutePath());
+        System.out.println(path.resolve("1111111"));
 
         // iterator -> dir1, dir2, dir3, file.txt
 
