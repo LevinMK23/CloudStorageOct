@@ -7,7 +7,7 @@ public class Server {
 
     public Server() {
         ExecutorService runner = Executors.newFixedThreadPool(4);
-        try(ServerSocket server = new ServerSocket(8189)) {
+        try(ServerSocket server = new ServerSocket(8000)) {
             while (true) {
                 Socket socket = server.accept();
                 System.out.println("Client accepted");
