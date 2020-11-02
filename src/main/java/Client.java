@@ -4,6 +4,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.Socket;
+
 /**
  * Client command: upload fileName | download fileName
  *
@@ -45,6 +46,20 @@ public class Client extends JFrame {
                 } catch (IOException ioException) {
                     throw new RuntimeException("Ошибка загрузки файла с сервера", ioException);
                 }
+            }
+            try {
+                out.write(text.getText().getBytes());
+                new Thread(() ->
+                {
+                    try {
+                        System.out.println(new String(in.readAllBytes()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                ).start();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
 
