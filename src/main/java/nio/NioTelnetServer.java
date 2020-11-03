@@ -1,5 +1,8 @@
 package nio;
 
+import nio.telnet.*;
+import nio.telnet.functions.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,19 +12,27 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 public class NioTelnetServer {
 
     private final ByteBuffer buffer = ByteBuffer.allocate(1024);
-    private final String rootPath = "server";
+    private final String rootPath = "client";
+
+    private ConsoleFunctionExecutor functionExecutor = new ConsoleFunctionExecutor();
+
 
     public NioTelnetServer() throws IOException {
+
+        init();
+
         ServerSocketChannel server = ServerSocketChannel.open();
         server.bind(new InetSocketAddress(8189));
         server.configureBlocking(false);
         Selector selector = Selector.open();
         server.register(selector, SelectionKey.OP_ACCEPT);
         System.out.println("Server started!");
+
         while (server.isOpen()) {
             selector.select();
             var selectionKeys = selector.selectedKeys();
@@ -40,12 +51,6 @@ public class NioTelnetServer {
     }
 
     // TODO: 30.10.2020
-    //  ls - список файлов (сделано на уроке),
-    //  cd (name) - перейти в папку
-    //  touch (name) создать текстовый файл с именем
-    //  mkdir (name) создать директорию
-    //  rm (name) удалить файл по имени
-    //  copy (src, target) скопировать файл из одного пути в другой
     //  cat (name) - вывести в консоль содержимое файла
 
     private void handleRead(SelectionKey key, Selector selector) throws IOException {
@@ -69,13 +74,15 @@ public class NioTelnetServer {
                 .replace("\n", "")
                 .replace("\r", "");
         System.out.println(command);
-        if (command.equals("--help")) {
-            channel.write(ByteBuffer.wrap("input ls for show file list".getBytes()));
-        }
-        if (command.equals("ls")) {
-            channel.write(ByteBuffer.wrap(getFilesList().getBytes()));
-        }
 
+        ConsoleFunctionResultValue resultValue = functionExecutor.execute(command);
+
+        sendString(channel, resultValue.result);
+
+    }
+
+    private void sendString(SocketChannel channel, String message) throws IOException {
+        channel.write(ByteBuffer.wrap((message + "\n\r").getBytes()));
     }
 
     private void sendMessage(String message, Selector selector) throws IOException {
@@ -96,10 +103,23 @@ public class NioTelnetServer {
         channel.configureBlocking(false);
         System.out.println("Client accepted. IP: " + channel.getRemoteAddress());
         channel.register(selector, SelectionKey.OP_READ, "LOL");
-        channel.write(ByteBuffer.wrap("Enter --help".getBytes()));
+        channel.write(ByteBuffer.wrap("Enter --help\n\r".getBytes()));
     }
 
     public static void main(String[] args) throws IOException {
         new NioTelnetServer();
+    }
+
+    private void init(){
+        Path root = Path.of("client");
+        functionExecutor.setFunctionExecuteContent(new FunctionExecuteContent(root));
+
+        functionExecutor.addFunction(new ConsoleFunctionLS());
+        functionExecutor.addFunction(new ConsoleFunctionCD());
+        functionExecutor.addFunction(new ConsoleFunctionMkDir());
+        functionExecutor.addFunction(new ConsoleFunctionRm());
+        functionExecutor.addFunction(new ConsoleFunctionCopy());
+        functionExecutor.addFunction(new ConsoleFunctionTouch());
+        functionExecutor.addFunction(new ConsoleFunctionCat());
     }
 }
