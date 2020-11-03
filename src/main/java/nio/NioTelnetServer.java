@@ -1,5 +1,9 @@
 package nio;
 
+import nio.functions.ConsoleFunctionExecutor;
+import nio.functions.ConsoleFunctionResultValue;
+import nio.functions.HelpCF;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -13,15 +17,22 @@ import java.nio.charset.StandardCharsets;
 public class NioTelnetServer {
 
     private final ByteBuffer buffer = ByteBuffer.allocate(1024);
-    private final String rootPath = "server";
+    private final String rootPath = "client";
+
+    private ConsoleFunctionExecutor functionExecutor = new ConsoleFunctionExecutor();
+
 
     public NioTelnetServer() throws IOException {
+
+        init();
+
         ServerSocketChannel server = ServerSocketChannel.open();
         server.bind(new InetSocketAddress(8189));
         server.configureBlocking(false);
         Selector selector = Selector.open();
         server.register(selector, SelectionKey.OP_ACCEPT);
         System.out.println("Server started!");
+
         while (server.isOpen()) {
             selector.select();
             var selectionKeys = selector.selectedKeys();
@@ -69,12 +80,17 @@ public class NioTelnetServer {
                 .replace("\n", "")
                 .replace("\r", "");
         System.out.println(command);
-        if (command.equals("--help")) {
-            channel.write(ByteBuffer.wrap("input ls for show file list".getBytes()));
-        }
-        if (command.equals("ls")) {
-            channel.write(ByteBuffer.wrap(getFilesList().getBytes()));
-        }
+
+        ConsoleFunctionResultValue resultValue = functionExecutor.execute(command);
+
+        channel.write(ByteBuffer.wrap(resultValue.result.getBytes()));
+
+//        if (command.equals("--help")) {
+//            channel.write(ByteBuffer.wrap("input ls for show file list".getBytes()));
+//        }
+//        if (command.equals("ls")) {
+//            channel.write(ByteBuffer.wrap(getFilesList().getBytes()));
+//        }
 
     }
 
@@ -96,10 +112,14 @@ public class NioTelnetServer {
         channel.configureBlocking(false);
         System.out.println("Client accepted. IP: " + channel.getRemoteAddress());
         channel.register(selector, SelectionKey.OP_READ, "LOL");
-        channel.write(ByteBuffer.wrap("Enter --help".getBytes()));
+        channel.write(ByteBuffer.wrap("Enter --help\n\r".getBytes()));
     }
 
     public static void main(String[] args) throws IOException {
         new NioTelnetServer();
+    }
+
+    private void init(){
+        functionExecutor.addFunction(new HelpCF());
     }
 }
