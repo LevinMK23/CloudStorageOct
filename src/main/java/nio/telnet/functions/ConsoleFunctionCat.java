@@ -16,7 +16,7 @@ public class ConsoleFunctionCat implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "print file content to console, relative to current path";
+        return "Print file content to console. Relative to current path. Type relative filename to open file";
     }
 
     @Override

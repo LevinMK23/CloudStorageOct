@@ -15,7 +15,7 @@ public class ConsoleFunctionTouch implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "create new file, relative by current path";
+        return "Create new file. Relative to current path";
     }
 
     @Override

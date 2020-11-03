@@ -13,7 +13,7 @@ public class ConsoleFunctionLS implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "show file and directory list";
+        return "Show file and directory list. Relative to current path";
     }
 
     @Override

@@ -16,7 +16,7 @@ public class ConsoleFunctionCopy implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "copy file from source to destination. root relative. first argument - file name with path, second - destination folder or ':' to root";
+        return "Copy file from source to destination. Relative to root. First argument - file name with path, second - destination folder or ':' to root";
     }
 
     @Override

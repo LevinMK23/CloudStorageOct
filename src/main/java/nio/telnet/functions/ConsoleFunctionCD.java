@@ -14,7 +14,7 @@ public class ConsoleFunctionCD implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "change directory. Type '.' to move up, type ':' to move root";
+        return "Change directory. Relative to root. Type '.' to move up, type ':' to move root";
     }
 
     @Override

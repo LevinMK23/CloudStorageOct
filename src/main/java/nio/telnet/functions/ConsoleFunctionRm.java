@@ -16,7 +16,7 @@ public class ConsoleFunctionRm implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "delete file or directory, type rm -all to delete all included directories";
+        return "Delete file or empty directory. Relative to current path";
     }
 
     @Override

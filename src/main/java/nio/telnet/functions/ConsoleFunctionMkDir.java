@@ -16,7 +16,7 @@ public class ConsoleFunctionMkDir implements ConsoleFunction{
 
     @Override
     public String getDescription() {
-        return "create new directory";
+        return "Create new directory. Relative to current path";
     }
 
     @Override
