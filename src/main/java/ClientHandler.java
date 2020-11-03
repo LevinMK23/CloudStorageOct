@@ -42,6 +42,7 @@ public class ClientHandler implements Runnable {
                 }
                 if (command.equals("download")) {
                     // TODO: 27.10.2020
+                    //Я извиняюсь, но допишу позднее
                 }
                 if (command.equals("exit")) {
                     System.out.println("Client disconnected correctly");
