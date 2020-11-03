@@ -1,8 +1,7 @@
 package nio;
 
-import nio.functions.ConsoleFunctionExecutor;
-import nio.functions.ConsoleFunctionResultValue;
-import nio.functions.HelpCF;
+import nio.telnet.*;
+import nio.telnet.functions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +12,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 public class NioTelnetServer {
 
@@ -51,12 +51,6 @@ public class NioTelnetServer {
     }
 
     // TODO: 30.10.2020
-    //  ls - список файлов (сделано на уроке),
-    //  cd (name) - перейти в папку
-    //  touch (name) создать текстовый файл с именем
-    //  mkdir (name) создать директорию
-    //  rm (name) удалить файл по имени
-    //  copy (src, target) скопировать файл из одного пути в другой
     //  cat (name) - вывести в консоль содержимое файла
 
     private void handleRead(SelectionKey key, Selector selector) throws IOException {
@@ -83,15 +77,12 @@ public class NioTelnetServer {
 
         ConsoleFunctionResultValue resultValue = functionExecutor.execute(command);
 
-        channel.write(ByteBuffer.wrap(resultValue.result.getBytes()));
+        sendString(channel, resultValue.result);
 
-//        if (command.equals("--help")) {
-//            channel.write(ByteBuffer.wrap("input ls for show file list".getBytes()));
-//        }
-//        if (command.equals("ls")) {
-//            channel.write(ByteBuffer.wrap(getFilesList().getBytes()));
-//        }
+    }
 
+    private void sendString(SocketChannel channel, String message) throws IOException {
+        channel.write(ByteBuffer.wrap((message + "\n\r").getBytes()));
     }
 
     private void sendMessage(String message, Selector selector) throws IOException {
@@ -120,6 +111,15 @@ public class NioTelnetServer {
     }
 
     private void init(){
-        functionExecutor.addFunction(new HelpCF());
+        Path root = Path.of("client");
+        functionExecutor.setFunctionExecuteContent(new FunctionExecuteContent(root));
+
+        functionExecutor.addFunction(new ConsoleFunctionLS());
+        functionExecutor.addFunction(new ConsoleFunctionCD());
+        functionExecutor.addFunction(new ConsoleFunctionMkDir());
+        functionExecutor.addFunction(new ConsoleFunctionRm());
+        functionExecutor.addFunction(new ConsoleFunctionCopy());
+        functionExecutor.addFunction(new ConsoleFunctionTouch());
+        functionExecutor.addFunction(new ConsoleFunctionCat());
     }
 }

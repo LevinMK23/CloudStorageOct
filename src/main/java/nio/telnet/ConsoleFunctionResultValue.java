@@ -1,4 +1,4 @@
-package nio.functions;
+package nio.telnet;
 
 public class ConsoleFunctionResultValue {
     public boolean isDone;
