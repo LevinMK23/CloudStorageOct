@@ -64,6 +64,31 @@ public class Client extends JFrame {
 
     private void getFile(String fileName) {
         // TODO: 27.10.2020
+        try {
+            out.writeUTF("download");
+            out.writeUTF(fileName);
+            if (in.readUTF().equals("fileNotFound")) {
+                System.out.println("File " + fileName + " not found!");
+            } else {
+                System.out.println("File " + fileName + " begin transfer");
+                long size = in.readLong();
+                File file = new File("client/" + fileName);
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
+                FileOutputStream fos = new FileOutputStream(file);
+                byte[] buffer = new byte[256];
+                for (int i = 0; i < (size + 255) / 256; i++) {
+                    int read = in.read(buffer);
+                    fos.write(buffer, 0, read);
+                }
+                fos.close();
+                out.writeUTF("OK");
+                System.out.println("File " + fileName + " transfer complete");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void sendFile(String filename) {
