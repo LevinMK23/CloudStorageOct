@@ -1,22 +1,17 @@
 package nio;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
+import java.nio.file.*;
+
 
 public class NioTelnetServer {
-
     private final ByteBuffer buffer = ByteBuffer.allocate(1024);
-    private final String rootPath = "server";
-    private HashMap<SocketAddress, Path> usrPath;
+    private Path rootPath = Path.of("C:/");
+    private SocketChannel channel;
 
     public NioTelnetServer() throws IOException {
         ServerSocketChannel server = ServerSocketChannel.open();
@@ -24,8 +19,7 @@ public class NioTelnetServer {
         server.configureBlocking(false);
         Selector selector = Selector.open();
         server.register(selector, SelectionKey.OP_ACCEPT);
-        usrPath = new HashMap<>();
-        System.out.println("Server started!");
+        System.out.println("Server start");
         while (server.isOpen()) {
             selector.select();
             var selectionKeys = selector.selectedKeys();
@@ -34,8 +28,7 @@ public class NioTelnetServer {
                 var key = iterator.next();
                 if (key.isAcceptable()) {
                     handleAccept(key, selector);
-                }
-                if (key.isReadable()) {
+                } else if (key.isReadable()) {
                     handleRead(key, selector);
                 }
                 iterator.remove();
@@ -43,20 +36,10 @@ public class NioTelnetServer {
         }
     }
 
-    // TODO: 30.10.2020
-    //  ls - список файлов (сделано на уроке),
-    //  cd (name) - перейти в папку (+)
-    //  touch (name) создать текстовый файл с именем (+)
-    //  mkdir (name) создать директорию (+)
-    //  rm (name) удалить файл по имени (+)
-    //  copy (src, target) скопировать файл из одного пути в другой (не получилось)
-    //  cat (name) - вывести в консоль содержимое файла (+)
-
     private void handleRead(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
+        channel = (SocketChannel) key.channel();
         int read = channel.read(buffer);
         if (read == -1) {
-            usrPath.remove(channel.getRemoteAddress());
             channel.close();
             return;
         }
@@ -64,154 +47,221 @@ public class NioTelnetServer {
             return;
         }
         buffer.flip();
-        byte[] buf = new byte[read];
         int pos = 0;
+        byte[] buf = new byte[read];
         while (buffer.hasRemaining()) {
             buf[pos++] = buffer.get();
         }
         buffer.clear();
-        String command = new String(buf, StandardCharsets.UTF_8)
-                .replace("\n", "")
-                .replace("\r", "");
+
+        String command = new String(buf, StandardCharsets.UTF_8).
+                replace("\n", "").replace("\r", "");
+        System.out.println(command);
         if (command.equals("--help")) {
-            channel.write(ByteBuffer.wrap(("1.input ls for show file list\n\r" +
-                    "2.input cd for change the directory\n\r" +
-                    "3.input touch for create file\n\r" +
-                    "4.input mkdir for create directory\n\r" +
-                    "5.input rm for delete file\n\r" +
-                    "6.input cat for show the contents of the file\n\r").getBytes()));
-        } else if (command.equals("ls")) {
-            channel.write(ByteBuffer.wrap(getFilesList(channel.getRemoteAddress()).getBytes()));
-        } else if (command.substring(0, 2).equals("cd") && command.length() >= 4) {
-            channel.write(ByteBuffer.wrap(changeDirectory(channel.getRemoteAddress(), command.substring(3)).getBytes()));
-        } else if (command.substring(0, 5).equals("touch") && command.length() > 6) {
-            channel.write(ByteBuffer.wrap(createFile(channel.getRemoteAddress(), command.substring(6)).getBytes()));
-        } else if (command.substring(0, 5).equals("mkdir") && command.length() > 6) {
-            channel.write(ByteBuffer.wrap(createDir(channel.getRemoteAddress(), command.substring(6)).getBytes()));
-        } else if (command.substring(0, 2).equals("rm") && command.length() >= 4) {
-            channel.write(ByteBuffer.wrap(deleteFile(channel.getRemoteAddress(), command.substring(3)).getBytes()));
+            channel.write(ByteBuffer.wrap(("input --ls for show file list; \n\r" +
+                    "--cd (name) going to the folder; \n\r" +
+                    "--touch (name) creat txt file; \n\r" +
+                    "--mkdir (name) creat directory; \n\r" +
+                    "--rm (name) remove file; \n\r" +
+                    "--copy (name , directory) copy file from directory to another; \n\r" +
+                    "--cat (name) print the contents of a file to the console.\n\r").getBytes()));
         }
-//        else if (command.substring(0, 4).equals("copy") && command.length() > 5) {
-//            channel.write(ByteBuffer.wrap(copyFile(command.substring(5)).getBytes()));
-//        }
-        else if (command.substring(0, 3).equals("cat") && command.length() > 4) {
-            channel.write(ByteBuffer.wrap(showFile(channel.getRemoteAddress(), command.substring(4)).getBytes()));
+        if (command.equals("--ls")) {
+            String files = getFilesList();
+            channel.write(ByteBuffer.wrap(getFilesList().getBytes()));
+            channel.write(ByteBuffer.wrap(("\n\r" + rootPath.toAbsolutePath().toString() + ">").getBytes()));
         }
-
-
-    }
-
-    private String showFile(SocketAddress remoteAddress, String name) {
-        Path p = Path.of(usrPath.get(remoteAddress).toString(), name);
-        String textFile = "";
-        if (Files.exists(p)) {
-            try {
-                BufferedReader br = Files.newBufferedReader(p);
-                String line;
-                while ((line = br.readLine()) != null) {
-                    textFile += line + "\n\r";
+        if (command.startsWith("--cd")) {
+            String[] str = command.split(" ");
+            if (validComand(str)) {
+                moveFolder(str[1]);
+            } else {
+                invalidCommand();
+            }
+        }
+        if (command.startsWith("--touch")) {
+            String[] str = command.split(" ");
+            if (validComand(str)) {
+                if (str[1].contains(".txt")) {
+                    createFile("/" + str[1]);
+                    channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
+                } else {
+                    createFile("/" + str[1] + ".txt");
+                    channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
                 }
-                return textFile + "\n\r";
-            } catch (IOException e) {
-                e.printStackTrace();
-                return "error: " + e.getMessage() + "\n\r";
+            } else {
+                invalidCommand();
+            }
+        }
+        if (command.startsWith("--mkdir")) {
+            String[] str = command.split(" ");
+            if (validComand(str)) {
+                createDir("/" + str[1]);
+                channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
+            } else {
+                invalidCommand();
+            }
+        }
+        if (command.startsWith("--rm")) {
+            String[] str = command.split(" ");
+            if (validComand(str)) {
+                removeFile("/" + str[1]);
+                channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
+            } else {
+                invalidCommand();
+            }
+        }
+        if (command.startsWith("--copy")) {
+            String[] str = command.split(" ");
+            if (str.length > 2) {
+                try {
+                    copyFile(str);
+                } catch (InvalidPathException e) {
+                    invalidCommand();
+                }
+            } else {
+                invalidCommand();
+            }
+        }
+        if (command.startsWith("--cat")) {
+            String[] str = command.split(" ");
+            if (validComand(str)) {
+                readFile(str);
+            } else {
+                invalidCommand();
+            }
+        }
+    }
+
+    private void readFile(String[] str) throws IOException {
+        if (Files.exists(Path.of(rootPath.toString() + "/" + str[1]))) {
+            BufferedReader buf = null;
+            try {
+                String s;
+                buf = new BufferedReader(new FileReader(rootPath.toString() + "/" + str[1]));
+                while ((s = buf.readLine()) != null) {
+                    channel.write(ByteBuffer.wrap(s.getBytes()));
+                }
+                channel.write(ByteBuffer.wrap(("\n\r" + rootPath.toAbsolutePath().toString() + ">").getBytes()));
+            } finally {
+                try {
+                    if (buf != null)
+                        buf.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             }
         } else {
-            return "file not found\n\r";
+            channel.write(ByteBuffer.wrap(("File " + str[1] + " not detected" + "\n\r").getBytes()));
         }
-
     }
 
-    private String copyFile(String command) {
-        String path[] = command.split(" ");
-        Path src = Path.of(path[0]);
-        Path target = Path.of(path[1]);
-        if (!Files.exists(src)) {
-            return "file not found\n\r";
+    private void copyFile(String[] str) throws IOException {
+        if (Files.isDirectory(Path.of(str[2]))) {
+            Path toPath = Path.of(str[2] + "/" + str[1]);
+            if (Files.exists(Path.of(rootPath.toString() + "/" + str[1]))) {
+                if (!Files.exists(toPath)) {
+                    Path fromPath = Path.of(rootPath.toString() + "/" + str[1]);
+                    Files.copy(fromPath, toPath, StandardCopyOption.REPLACE_EXISTING);
+                    channel.write(ByteBuffer.wrap(("File " + str[1] + " copy success" + "\n\r").getBytes()));
+                } else {
+                    channel.write(ByteBuffer.wrap(("File " + str[1] + " already exist" + "\n\r").getBytes()));
+                }
+            } else {
+                channel.write(ByteBuffer.wrap(("File " + str[1] + " not detected" + "\n\r").getBytes()));
+            }
+            channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
         } else {
-
-//            if (!Files.exists(target)) {
-//
-//            }
+            channel.write(ByteBuffer.wrap(("Directory " + str[2] + " not detected" + "\n\r").getBytes()));
         }
-        return "";
     }
 
-    private String deleteFile(SocketAddress remoteAddress, String name) {
-        Path p = Path.of(usrPath.get(remoteAddress).toString(), name);
-        if (!Files.exists(p)) {
-            return "file not found\n\r";
+    private void removeFile(String s) throws IOException {
+        Path newPath = Path.of(rootPath.toString() + s);
+        if (Files.exists(newPath)) {
+            Files.delete(newPath);
+            channel.write(ByteBuffer.wrap(("File " + s.replace("/", "") + " delete" + "\n\r").getBytes()));
+        } else {
+            channel.write(ByteBuffer.wrap(("File " + s.replace("/", "") + " not detected" + "\n\r").getBytes()));
+        }
+    }
+
+    private void invalidCommand() throws IOException {
+        channel.write(ByteBuffer.wrap(("Wrong command" + "\n\r").getBytes()));
+        channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
+    }
+
+    private boolean validComand(String[] s) {
+        return s.length > 1;
+    }
+
+    private void createDir(String s) throws IOException {
+        Path newPath = Path.of(rootPath.toString() + s);
+        if (!Files.isDirectory(newPath)) {
+            Files.createDirectory(newPath);
+            channel.write(ByteBuffer.wrap(("Directory " + s.replace("/", "") + " created" + "\n\r").getBytes()));
+        } else {
+            channel.write(ByteBuffer.wrap(("Directory " + s.replace("/", "") + " already exist" + "\n\r").getBytes()));
+        }
+    }
+
+    private void moveFolder(String s) throws IOException {
+        Path p;
+        if (s.contains(":") && !s.equals("C:")) {
+            try {
+                if (Files.isDirectory(Path.of(s.replace("\\", "/")))) {
+                    rootPath = Path.of(s.replace("\\", "/"));
+                } else {
+                    channel.write(ByteBuffer.wrap(("The system cannot find a way." + "\n\r").getBytes()));
+                }
+            } catch (InvalidPathException | IOException pathException) {
+                channel.write(ByteBuffer.wrap(("Wrong way. Use '\\'" + "\n\r").getBytes()));
+            }
+            p = rootPath;
         } else {
             try {
-                Files.delete(p);
-                return "file deleted\n\r";
-            } catch (IOException e) {
-                e.printStackTrace();
-                return "error: " + e.getMessage() + "\n\r";
+                p = Path.of(rootPath.toString() + "/" + s);
+            } catch (InvalidPathException pathException) {
+                channel.write(ByteBuffer.wrap(("Wrong path" + "\n\r").getBytes()));
+                p = rootPath;
             }
         }
-    }
-
-    private String createDir(SocketAddress remoteAddress, String name) {
-        Path p = Path.of(usrPath.get(remoteAddress).toString(), name);
-        if (!Files.exists(p)) {
+        if (s.equals("..\\")) {
             try {
-                Files.createDirectory(p);
-                return "directory is created\n\r";
-            } catch (IOException e) {
-                e.printStackTrace();
-                return "error: " + e.getMessage() + "\n\r";
+                rootPath = Path.of(rootPath.getParent().toString());
+            } catch (Exception e) {
             }
-        } else return "directory already exists\n\r";
-    }
-
-    private String createFile(SocketAddress remoteAddress, String name) {
-        Path p = Path.of(usrPath.get(remoteAddress).toString(), name);
-        if (!Files.exists(p)) {
-            try {
-                Files.createFile(p);
-                return "file is created\n\r";
-            } catch (IOException e) {
-                e.printStackTrace();
-                return "error: " + e.getMessage() + "\n\r";
-            }
+            channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
+        } else if (Files.isDirectory(Path.of(p.toString()))) {
+            rootPath = Path.of(p.toString());
+            channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
         } else {
-            return "file already exists\n\r";
+            channel.write(ByteBuffer.wrap(("The system cannot find a way." + "\n\r").getBytes()));
+            channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
         }
     }
 
-    private void sendMessage(String message, Selector selector) throws IOException {
-        for (SelectionKey key : selector.keys()) {
-            if (key.isValid() && key.channel() instanceof SocketChannel) {
-                ((SocketChannel) key.channel())
-                        .write(ByteBuffer.wrap(message.getBytes()));
-            }
-        }
-    }
-
-    private String getFilesList(SocketAddress address) {
-        return String.join(" ", new File(usrPath.get(address).toString()).list())+"\n\r";
-    }
-
-    private String changeDirectory(SocketAddress address, String command) {
-        Path x = Path.of(usrPath.get(address).toString(), command);
-        if (Files.exists(x)) {
-            usrPath.put(address, x);
-            return x.toString() + " ";
+    private void createFile(String s) throws IOException {
+        Path newPath = Path.of(rootPath.toString() + s);
+        if (!Files.exists(newPath)) {
+            Files.createFile(newPath);
+            channel.write(ByteBuffer.wrap(("File " + s.replace("/", "") + " created" + "\n\r").getBytes()));
         } else {
-            return "Path not found\n\r";
+            channel.write(ByteBuffer.wrap(("File " + s.replace("/", "") + " already exist" + "\n\r").getBytes()));
         }
+    }
+
+    private String getFilesList() {
+        return String.join("\n\r", new File(String.valueOf(rootPath)).list());
     }
 
     private void handleAccept(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = ((ServerSocketChannel) key.channel()).accept();
+        channel = ((ServerSocketChannel) key.channel()).accept();
         channel.configureBlocking(false);
-        System.out.println("Client accepted. IP: " + channel.getRemoteAddress());
-        channel.register(selector, SelectionKey.OP_READ, "LOL");
-        if (!usrPath.containsKey(channel.getRemoteAddress())) {
-            usrPath.put(channel.getRemoteAddress(), Path.of(rootPath));
-        }
+        System.out.println("Client accepted with IP: " + channel.getRemoteAddress());
+        channel.register(selector, SelectionKey.OP_READ, "user");
         channel.write(ByteBuffer.wrap("Enter --help\n\r".getBytes()));
+        channel.write(ByteBuffer.wrap((rootPath.toAbsolutePath().toString() + ">").getBytes()));
     }
 
     public static void main(String[] args) throws IOException {

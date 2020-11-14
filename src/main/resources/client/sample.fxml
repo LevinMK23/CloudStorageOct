@@ -1,0 +1,68 @@
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="440.0" prefWidth="691.0"
+      xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.Controller">
+<children>
+    <Pane fx:id="pane" visible="false" layoutY="-4.0" prefHeight="448.0" prefWidth="695.0">
+        <children>
+            <TextArea fx:id="textAreaServer" layoutX="68.0" layoutY="82.0" prefHeight="285.0" prefWidth="233.0" onKeyTyped="#disableTextInput"
+                      onMouseClicked="#mouseClickedTextArea"  maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
+            <TextArea fx:id="textAreaUser" layoutX="397.0" layoutY="82.0" prefHeight="285.0" prefWidth="233.0" onKeyTyped="#disableTextInput"
+                      onMouseClicked="#mouseClickedTextArea" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"/>
+            <Button layoutX="313.0" layoutY="178.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="70.0" text="Upload" onAction="#uploadFile" />
+            <Button layoutX="312.0" layoutY="212.0" mnemonicParsing="false" text="Download" onAction="#downloadFile"  />
+            <TextField fx:id="textFieldServer" layoutX="68.0" layoutY="51.0" prefHeight="25.0" prefWidth="233.0" onKeyTyped="#disableTextInput"
+                       onMouseClicked="#mouseClickedTextArea"/>
+            <TextField fx:id="textFieldUser" layoutX="397.0" layoutY="51.0" prefHeight="25.0" prefWidth="233.0" onKeyTyped="#disableTextInput"
+                       onMouseClicked="#mouseClickedTextArea"/>
+            <Button layoutX="7.0" layoutY="82.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="49.0" text="touch" onAction="#creatServerFile" />
+            <Button layoutX="7.0" layoutY="114.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="49.0" text="mkdir" onAction="#createServerDir"/>
+            <Button layoutX="7.0" layoutY="146.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="49.0" text="rm" onAction="#removeServerFile"/>
+            <Button layoutX="636.0" layoutY="78.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="49.0" text="touch" onAction="#creatUserFile" />
+            <Button layoutX="636.0" layoutY="114.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="49.0" text="mkdir" onAction="#createUserDir" />
+            <Button layoutX="636.0" layoutY="146.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="49.0" text="rm" onAction="#removeUserFile"/>
+            <TextField fx:id="textFieldFile" layoutX="197.0" layoutY="385.0" prefHeight="25.0" prefWidth="305.0" promptText="Введите имя файла или папки" />
+            <Button layoutX="6.0" layoutY="178.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="49.0" text="cd" onAction="#cdServer" />
+            <Button layoutX="636.0" layoutY="178.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="49.0" text="cd" onAction="#cdClient"/>
+            <Button layoutX="643.0" layoutY="410.0" mnemonicParsing="false" text="Exit" onAction="#exit" />
+            <TextField fx:id="messageFieldcloud" alignment="CENTER" layoutX="251.0" layoutY="148.0" prefHeight="94.0" prefWidth="242.0" visible="false" onKeyTyped="#disableTextInput"
+                       onMouseClicked="#mouseClickedTextArea"/>
+            <Button  fx:id="messageButtoncloud" layoutX="251.0" layoutY="237.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="242.0" text="OK" visible="false" onAction="#closeMessagecloud"/>
+            <Button layoutX="20.0" layoutY="14.0" mnemonicParsing="false" text="Help"  onAction="#helpMessage"/>
+            <TextArea fx:id="helpArea" wrapText="true" layoutX="250.0" layoutY="12.0" prefHeight="225.0" prefWidth="242.0" visible="false" onKeyTyped="#disableTextInput"
+                      onMouseClicked="#mouseClickedTextArea" />
+            <Button layoutX="636.0" layoutY="212.0" mnemonicParsing="false" onAction="#renameFileUser" prefHeight="25.0" prefWidth="49.0" text="rename">
+                <font>
+                    <Font size="10.0" />
+                </font>
+            </Button>
+            <Button layoutX="7.0" layoutY="212.0" mnemonicParsing="false" onAction="#renameFileServer" prefHeight="25.0" prefWidth="49.0" text="rename">
+                <font>
+                    <Font size="10.0" />
+                </font>
+            </Button>
+            <Button layoutX="7.0" layoutY="242.0" mnemonicParsing="false" onAction="#readFileServer" prefHeight="18.0" prefWidth="49.0" text="cat" />
+            <TextArea prefHeight="440.0" prefWidth="691.0" visible="false" />
+            <Button layoutX="636.0" layoutY="242.0" mnemonicParsing="false" onAction="#readFileUser" prefHeight="18.0" prefWidth="49.0" text="cat" />
+            <Button fx:id="notDeleteButton" layoutX="251.0" layoutY="237.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="118.0" text="No" onAction="#closeMessagecloud" visible="false"/>
+            <Button fx:id="deleteButton" layoutX="372.0" layoutY="237.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="118.0" text="Yes" visible="false"/>
+        </children>
+    </Pane>
+    <Pane fx:id="pane1" layoutY="-4.0" prefHeight="448.0" prefWidth="695.0">
+        <children>
+            <TextField fx:id="loginfield" layoutX="298.0" layoutY="166.0" promptText="Enter login" />
+            <TextField fx:id="passwordfiled" layoutX="298.0"  layoutY="200.0" promptText="Enter password" />
+            <Button fx:id="loginbutton"  layoutX="332.0" layoutY="230.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="80.0" text="Login" onAction="#tryToAuth" />
+            <Button fx:id="regbutton" layoutX="332.0" layoutY="262.0" mnemonicParsing="false" text="Registration" onAction="#regWindow"/>
+            <Button fx:id="regbutton1" layoutX="332.0" layoutY="229.0" mnemonicParsing="false" text="Registration" visible="false" onAction="#tryToReg" />
+            <TextField fx:id="messageField" alignment="CENTER" layoutX="251.0" layoutY="148.0" prefHeight="94.0" prefWidth="242.0" visible="false" onKeyTyped="#disableTextInput"
+                       onMouseClicked="#mouseClickedTextArea"/>
+            <Button  fx:id="messageButton" layoutX="251.0" layoutY="237.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="242.0" text="OK" visible="false" onAction="#closeMessageAuth"/>
+        </children>
+    </Pane>
+</children>
+</Pane>
