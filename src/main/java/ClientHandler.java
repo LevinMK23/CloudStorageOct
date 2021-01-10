@@ -42,6 +42,23 @@ public class ClientHandler implements Runnable {
                 }
                 if (command.equals("download")) {
                     // TODO: 27.10.2020
+                    try {
+                        File file = new File("server/" + in.readUTF());
+                        if (!file.exists()) {
+                            file.createNewFile();
+                        }
+                        long size = in.readLong();
+                        FileOutputStream fos = new FileOutputStream(file);
+                        byte[] buffer = new byte[256];
+                        for (int i = 0; i < (size + 255) / 256; i++) {
+                            int read = in.read(buffer);
+                            fos.write(buffer, 0, read);
+                        }
+                        fos.close();
+                        out.writeUTF("OK");
+                    } catch (Exception e) {
+                        out.writeUTF("WRONG");
+                    }
                 }
                 if (command.equals("exit")) {
                     System.out.println("Client disconnected correctly");
