@@ -1,0 +1,7 @@
+ls - files list
+cd (name) - change directory
+touch (name) - create txt file
+mkdir (name) - create directory
+rm (name) - delete file
+copy (src, target) copy file from - to
+cat (name) - file contents
